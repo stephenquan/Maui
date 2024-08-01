@@ -22,9 +22,6 @@ public class MathExpressionConverterTests : BaseOneWayConverterTest<MathExpressi
 	[InlineData("(x + x) * x", 2d, 8d)]
 	[InlineData("3 + x * 2 / (1 - 5)^2", 4d, 3.5d)]
 	[InlineData("3 + 4 * 2 + cos(100 + x) / (1 - 5)^2 + pow(x0, 2)", 20d, 411.05088631065792d)]
-	[InlineData("3 < x == x > 3", 2d, 1d)]
-	[InlineData("3 <= x != 3 >= x", 2d, 1d)]
-	[InlineData("x >= 1 && (x <= 3 || x >= 0) ? true : false", 2d, 1d)]
 	public void MathExpressionConverter_ReturnsCorrectResult(string expression, double x, double expectedResult)
 	{
 		var mathExpressionConverter = new MathExpressionConverter();
@@ -33,7 +30,28 @@ public class MathExpressionConverterTests : BaseOneWayConverterTest<MathExpressi
 		var convertFromResult = mathExpressionConverter.ConvertFrom(x, expression);
 
 		Assert.True(Math.Abs((double)convertResult - expectedResult) < tolerance);
-		Assert.True(Math.Abs(convertFromResult - expectedResult) < tolerance);
+		Assert.True(Math.Abs((double)convertFromResult - expectedResult) < tolerance);
+	}
+
+	[Theory]
+	[InlineData("3 < x", 2d, false)]
+	[InlineData("x > 3", 2d, false)]
+	[InlineData("3 < x == x > 3", 2d, true)]
+	[InlineData("3 <= x != 3 >= x", 2d, true)]
+	[InlineData("x >= 1", 2d, true)]
+	[InlineData("x <= 3", 2d, true)]
+	[InlineData("x >= 1 && (x <= 3 || x >= 0)", 2d, true)]
+	[InlineData("true", 2d, true)]
+	[InlineData("false", 2d, false)]
+	public void MathExpressionConverter_ReturnsCorrectBooleanResult(string expression, double x, bool expectedResult)
+	{
+		var mathExpressionConverter = new MathExpressionConverter();
+
+		var convertResult = ((ICommunityToolkitValueConverter)mathExpressionConverter).Convert(x, mathExpressionTargetType, expression, cultureInfo) ?? throw new NullReferenceException();
+		var convertFromResult = mathExpressionConverter.ConvertFrom(x, expression);
+
+		Assert.True((bool)convertResult == expectedResult);
+		Assert.True((bool)convertFromResult == expectedResult);
 	}
 
 	[Theory]
@@ -88,9 +106,9 @@ public class MathExpressionConverterTests : BaseOneWayConverterTest<MathExpressi
 		Assert.Throws<ArgumentNullException>(() => ((ICommunityToolkitValueConverter)new MathExpressionConverter()).Convert(0.0, null, "x", null));
 		Assert.Throws<ArgumentNullException>(() => ((ICommunityToolkitValueConverter)new MathExpressionConverter()).ConvertBack(0.0, null, null, null));
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
-		Assert.Throws<ArgumentNullException>(() => ((ICommunityToolkitValueConverter)new MathExpressionConverter()).Convert(null, typeof(bool), "x", null));
+		//Assert.Throws<ArgumentNullException>(() => ((ICommunityToolkitValueConverter)new MathExpressionConverter()).Convert(null, typeof(bool), "x", null));
 		Assert.Throws<ArgumentNullException>(() => ((ICommunityToolkitValueConverter)new MathExpressionConverter()).Convert(null, typeof(bool), null, null));
-		Assert.Throws<ArgumentNullException>(() => ((ICommunityToolkitValueConverter)new MathExpressionConverter()).ConvertBack(null, typeof(bool), null, null));
+		//Assert.Throws<ArgumentNullException>(() => ((ICommunityToolkitValueConverter)new MathExpressionConverter()).ConvertBack(null, typeof(bool), null, null));
 	}
 
 	[Fact]

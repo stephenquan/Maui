@@ -11,9 +11,9 @@ sealed partial class MathExpression
 	static readonly IFormatProvider formatProvider = new CultureInfo("en-US");
 
 	readonly IReadOnlyList<MathOperator> operators;
-	readonly IReadOnlyList<double> arguments;
+	readonly IReadOnlyList<object> arguments;
 
-	internal MathExpression(string expression, IEnumerable<double>? arguments = null)
+	internal MathExpression(string expression, IEnumerable<object>? arguments = null)
 	{
 		ArgumentException.ThrowIfNullOrEmpty(expression, "Expression can't be null or empty.");
 
@@ -23,49 +23,49 @@ sealed partial class MathExpression
 
 		var operators = new List<MathOperator>
 		{
-			new ("?", 3, MathOperatorPrecedence.Low, x => x[0] != 0d ? x[1] : x[2]),
-			new ("==", 2, MathOperatorPrecedence.Low, x => x[0] == x[1] ? 1d : 0d),
-			new ("!=", 2, MathOperatorPrecedence.Low, x => x[0] != x[1] ? 1d : 0d),
-			new ("&&", 2, MathOperatorPrecedence.Low, x => x[0] != 0d && x[1] != 0d ? 1d : 0d),
-			new ("||", 2, MathOperatorPrecedence.Low, x => x[0] != 0d || x[1] != 0d ? 1d : 0d),
-			new (">", 2, MathOperatorPrecedence.Low, x => x[0] > x[1] ? 1d : 0d),
-			new (">=", 2, MathOperatorPrecedence.Low, x => x[0] >= x[1] ? 1d : 0d),
-			new ("<", 2, MathOperatorPrecedence.Low, x => x[0] < x[1] ? 1d : 0d),
-			new ("<=", 2, MathOperatorPrecedence.Low, x => x[0] <= x[1] ? 1d : 0d),
-			new ("+", 2, MathOperatorPrecedence.Low, x => x[0] + x[1]),
-			new ("-", 2, MathOperatorPrecedence.Low, x => x[0] - x[1]),
-			new ("*", 2, MathOperatorPrecedence.Medium, x => x[0] * x[1]),
-			new ("/", 2, MathOperatorPrecedence.Medium, x => x[0] / x[1]),
-			new ("%", 2, MathOperatorPrecedence.Medium, x => x[0] % x[1]),
-			new ("abs", 1, MathOperatorPrecedence.Medium, x => Math.Abs(x[0])),
-			new ("acos", 1, MathOperatorPrecedence.Medium, x => Math.Acos(x[0])),
-			new ("asin", 1, MathOperatorPrecedence.Medium, x => Math.Asin(x[0])),
-			new ("atan", 1, MathOperatorPrecedence.Medium, x => Math.Atan(x[0])),
-			new ("atan2", 2, MathOperatorPrecedence.Medium, x => Math.Atan2(x[0], x[1])),
-			new ("ceiling", 1, MathOperatorPrecedence.Medium, x => Math.Ceiling(x[0])),
-			new ("cos", 1, MathOperatorPrecedence.Medium, x => Math.Cos(x[0])),
-			new ("cosh", 1, MathOperatorPrecedence.Medium, x => Math.Cosh(x[0])),
-			new ("exp", 1, MathOperatorPrecedence.Medium, x => Math.Exp(x[0])),
-			new ("floor", 1, MathOperatorPrecedence.Medium, x => Math.Floor(x[0])),
-			new ("ieeeremainder", 2, MathOperatorPrecedence.Medium, x => Math.IEEERemainder(x[0], x[1])),
-			new ("log", 2, MathOperatorPrecedence.Medium, x => Math.Log(x[0], x[1])),
-			new ("log10", 1, MathOperatorPrecedence.Medium, x => Math.Log10(x[0])),
-			new ("max", 2, MathOperatorPrecedence.Medium, x => Math.Max(x[0], x[1])),
-			new ("min", 2, MathOperatorPrecedence.Medium, x => Math.Min(x[0], x[1])),
-			new ("pow", 2, MathOperatorPrecedence.Medium, x => Math.Pow(x[0], x[1])),
-			new ("round", 2, MathOperatorPrecedence.Medium, x => Math.Round(x[0], Convert.ToInt32(x[1]))),
-			new ("sign", 1, MathOperatorPrecedence.Medium, x => Math.Sign(x[0])),
-			new ("sin", 1, MathOperatorPrecedence.Medium, x => Math.Sin(x[0])),
-			new ("sinh", 1, MathOperatorPrecedence.Medium, x => Math.Sinh(x[0])),
-			new ("sqrt", 1, MathOperatorPrecedence.Medium, x => Math.Sqrt(x[0])),
-			new ("tan", 1, MathOperatorPrecedence.Medium, x => Math.Tan(x[0])),
-			new ("tanh", 1, MathOperatorPrecedence.Medium, x => Math.Tanh(x[0])),
-			new ("truncate", 1, MathOperatorPrecedence.Medium, x => Math.Truncate(x[0])),
-			new ("^", 2, MathOperatorPrecedence.High, x => Math.Pow(x[0], x[1])),
+			new ("?", 3, MathOperatorPrecedence.Low, x => Convert.ToBoolean(x[0]) ? x[1] : x[2]),
+			new ("==", 2, MathOperatorPrecedence.Low, x => object.Equals(x[0], x[1])),
+			new ("!=", 2, MathOperatorPrecedence.Low, x => !object.Equals(x[0], x[1])),
+			new ("&&", 2, MathOperatorPrecedence.Low, x => Convert.ToBoolean(x[0]) && Convert.ToBoolean(x[1])),
+			new ("||", 2, MathOperatorPrecedence.Low, x => Convert.ToBoolean(x[0]) || Convert.ToBoolean(x[1])),
+			new (">", 2, MathOperatorPrecedence.Low, x => Convert.ToDouble(x[0]) > Convert.ToDouble(x[1])),
+			new (">=", 2, MathOperatorPrecedence.Low, x => Convert.ToDouble(x[0]) >= Convert.ToDouble(x[1])),
+			new ("<", 2, MathOperatorPrecedence.Low, x => Convert.ToDouble(x[0]) < Convert.ToDouble(x[1])),
+			new ("<=", 2, MathOperatorPrecedence.Low, x => Convert.ToDouble(x[0]) <= Convert.ToDouble(x[1])),
+			new ("+", 2, MathOperatorPrecedence.Low, x => Convert.ToDouble(x[0]) + Convert.ToDouble(x[1])),
+			new ("-", 2, MathOperatorPrecedence.Low, x => Convert.ToDouble(x[0]) - Convert.ToDouble(x[1])),
+			new ("*", 2, MathOperatorPrecedence.Medium, x => Convert.ToDouble(x[0]) * Convert.ToDouble(x[1])),
+			new ("/", 2, MathOperatorPrecedence.Medium, x => Convert.ToDouble(x[0]) / Convert.ToDouble(x[1])),
+			new ("%", 2, MathOperatorPrecedence.Medium, x => Convert.ToDouble(x[0]) % Convert.ToDouble(x[1])),
+			new ("abs", 1, MathOperatorPrecedence.Medium, x => Math.Abs(Convert.ToDouble(x[0]))),
+			new ("acos", 1, MathOperatorPrecedence.Medium, x => Math.Acos(Convert.ToDouble(x[0]))),
+			new ("asin", 1, MathOperatorPrecedence.Medium, x => Math.Asin(Convert.ToDouble(x[0]))),
+			new ("atan", 1, MathOperatorPrecedence.Medium, x => Math.Atan(Convert.ToDouble(x[0]))),
+			new ("atan2", 2, MathOperatorPrecedence.Medium, x => Math.Atan2(Convert.ToDouble(x[0]), Convert.ToDouble(x[1]))),
+			new ("ceiling", 1, MathOperatorPrecedence.Medium, x => Math.Ceiling(Convert.ToDouble(x[0]))),
+			new ("cos", 1, MathOperatorPrecedence.Medium, x => Math.Cos(Convert.ToDouble(x[0]))),
+			new ("cosh", 1, MathOperatorPrecedence.Medium, x => Math.Cosh(Convert.ToDouble(x[0]))),
+			new ("exp", 1, MathOperatorPrecedence.Medium, x => Math.Exp(Convert.ToDouble(x[0]))),
+			new ("floor", 1, MathOperatorPrecedence.Medium, x => Math.Floor(Convert.ToDouble(x[0]))),
+			new ("ieeeremainder", 2, MathOperatorPrecedence.Medium, x => Math.IEEERemainder(Convert.ToDouble(x[0]), Convert.ToDouble(x[1]))),
+			new ("log", 2, MathOperatorPrecedence.Medium, x => Math.Log(Convert.ToDouble(x[0]), Convert.ToDouble(x[1]))),
+			new ("log10", 1, MathOperatorPrecedence.Medium, x => Math.Log10(Convert.ToDouble(x[0]))),
+			new ("max", 2, MathOperatorPrecedence.Medium, x => Math.Max(Convert.ToDouble(x[0]), Convert.ToDouble(x[1]))),
+			new ("min", 2, MathOperatorPrecedence.Medium, x => Math.Min(Convert.ToDouble(x[0]), Convert.ToDouble(x[1]))),
+			new ("pow", 2, MathOperatorPrecedence.Medium, x => Math.Pow(Convert.ToDouble(x[0]), Convert.ToDouble(x[1]))),
+			new ("round", 2, MathOperatorPrecedence.Medium, x => Math.Round(Convert.ToDouble(x[0]), Convert.ToInt32(x[1]))),
+			new ("sign", 1, MathOperatorPrecedence.Medium, x => Math.Sign(Convert.ToDouble(x[0]))),
+			new ("sin", 1, MathOperatorPrecedence.Medium, x => Math.Sin(Convert.ToDouble(x[0]))),
+			new ("sinh", 1, MathOperatorPrecedence.Medium, x => Math.Sinh(Convert.ToDouble(x[0]))),
+			new ("sqrt", 1, MathOperatorPrecedence.Medium, x => Math.Sqrt(Convert.ToDouble(x[0]))),
+			new ("tan", 1, MathOperatorPrecedence.Medium, x => Math.Tan(Convert.ToDouble(x[0]))),
+			new ("tanh", 1, MathOperatorPrecedence.Medium, x => Math.Tanh(Convert.ToDouble(x[0]))),
+			new ("truncate", 1, MathOperatorPrecedence.Medium, x => Math.Truncate(Convert.ToDouble(x[0]))),
+			new ("^", 2, MathOperatorPrecedence.High, x => Math.Pow(Convert.ToDouble(x[0]), Convert.ToDouble(x[1]))),
 			new ("pi", 0, MathOperatorPrecedence.Constant, _ => Math.PI),
 			new ("e", 0, MathOperatorPrecedence.Constant, _ => Math.E),
-			new ("true", 0, MathOperatorPrecedence.Constant, _ => 1d),
-			new ("false", 0, MathOperatorPrecedence.Constant, _ => 0d),
+			new ("true", 0, MathOperatorPrecedence.Constant, _ => true),
+			new ("false", 0, MathOperatorPrecedence.Constant, _ => false),
 		};
 
 		if (argumentList.Count > 0)
@@ -91,14 +91,14 @@ sealed partial class MathExpression
 
 	internal List<string> RPM { get; } = new();
 
-	public double Calculate()
+	public object Calculate()
 	{
 		if (!ParseExpression())
 		{
 			throw new ArgumentException("Invalid math expression.");
 		}
 
-		var stack = new Stack<double>();
+		var stack = new Stack<object>();
 
 		foreach (var value in RPM)
 		{
@@ -124,7 +124,7 @@ sealed partial class MathExpression
 				throw new ArgumentException("Invalid math expression.");
 			}
 
-			var args = new List<double>();
+			var args = new List<object>();
 			for (var j = 0; j < operatorNumericCount; j++)
 			{
 				args.Add(stack.Pop());
