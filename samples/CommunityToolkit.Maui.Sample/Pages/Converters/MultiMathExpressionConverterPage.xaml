@@ -18,7 +18,7 @@
     <Grid Padding="20"
           RowSpacing="20"
           ColumnSpacing="12"
-          ColumnDefinitions="*,*,*,*,*,*,*"
+          ColumnDefinitions="*,*,*,*,*,*,*,*"
           RowDefinitions="100, *">
         <Label Grid.ColumnSpan="7"
                Grid.Row="0"
@@ -72,6 +72,30 @@
                     <Binding Path="X2" Mode="OneWay"/>
                 </MultiBinding>
             </Label.Text>           
+        </Label>
+
+        <Label
+            Grid.Row="1"
+            Grid.Column="7"
+            Text="&gt;= 60"
+            TextColor="Green"
+            VerticalOptions="Center"
+            VerticalTextAlignment="Center">
+            <Label.Triggers>
+                <DataTrigger TargetType="Label">
+                    <DataTrigger.Binding>
+                        <MultiBinding Converter="{StaticResource MultiMathExpressionConverter}" ConverterParameter="x0 + x1 + x2 &gt;= 60">
+                            <Binding Mode="OneWay" Path="X0" />
+                            <Binding Mode="OneWay" Path="X1" />
+                            <Binding Mode="OneWay" Path="X2" />
+                        </MultiBinding>
+                    </DataTrigger.Binding>
+                    <DataTrigger.Value>
+                        <x:Boolean>False</x:Boolean>
+                    </DataTrigger.Value>
+                    <Setter Property="Label.TextColor" Value="Red" />
+                </DataTrigger>
+            </Label.Triggers>
         </Label>
     </Grid>
 </pages:BasePage>
