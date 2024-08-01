@@ -23,6 +23,15 @@ sealed partial class MathExpression
 
 		var operators = new List<MathOperator>
 		{
+			new ("?", 3, MathOperatorPrecedence.Low, x => x[0] != 0d ? x[1] : x[2]),
+			new ("==", 2, MathOperatorPrecedence.Low, x => x[0] == x[1] ? 1d : 0d),
+			new ("!=", 2, MathOperatorPrecedence.Low, x => x[0] != x[1] ? 1d : 0d),
+			new ("&&", 2, MathOperatorPrecedence.Low, x => x[0] != 0d && x[1] != 0d ? 1d : 0d),
+			new ("||", 2, MathOperatorPrecedence.Low, x => x[0] != 0d || x[1] != 0d ? 1d : 0d),
+			new (">", 2, MathOperatorPrecedence.Low, x => x[0] > x[1] ? 1d : 0d),
+			new (">=", 2, MathOperatorPrecedence.Low, x => x[0] >= x[1] ? 1d : 0d),
+			new ("<", 2, MathOperatorPrecedence.Low, x => x[0] < x[1] ? 1d : 0d),
+			new ("<=", 2, MathOperatorPrecedence.Low, x => x[0] <= x[1] ? 1d : 0d),
 			new ("+", 2, MathOperatorPrecedence.Low, x => x[0] + x[1]),
 			new ("-", 2, MathOperatorPrecedence.Low, x => x[0] - x[1]),
 			new ("*", 2, MathOperatorPrecedence.Medium, x => x[0] * x[1]),
@@ -55,6 +64,8 @@ sealed partial class MathExpression
 			new ("^", 2, MathOperatorPrecedence.High, x => Math.Pow(x[0], x[1])),
 			new ("pi", 0, MathOperatorPrecedence.Constant, _ => Math.PI),
 			new ("e", 0, MathOperatorPrecedence.Constant, _ => Math.E),
+			new ("true", 0, MathOperatorPrecedence.Constant, _ => 1d),
+			new ("false", 0, MathOperatorPrecedence.Constant, _ => 0d),
 		};
 
 		if (argumentList.Count > 0)
@@ -74,13 +85,22 @@ sealed partial class MathExpression
 
 	internal string Expression { get; }
 
+	internal int CurrentPosition { get; set; } = 0;
+
+	internal string MatchedString { get; set; } = string.Empty;
+
+	internal List<string> RPM { get; } = new();
+
 	public double Calculate()
 	{
-		var rpn = GetReversePolishNotation(Expression);
+		if (!ParseExpression())
+		{
+			throw new ArgumentException("Invalid math expression.");
+		}
 
 		var stack = new Stack<double>();
 
-		foreach (var value in rpn)
+		foreach (var value in RPM)
 		{
 			if (double.TryParse(value, numberStyle, formatProvider, out var numeric))
 			{
@@ -123,124 +143,321 @@ sealed partial class MathExpression
 		return stack.Pop();
 	}
 
-	[GeneratedRegex(@"(?<!\d)\-?(?:\d+\.\d+|\d+)|\+|\-|\/|\*|\(|\)|\^|\%|\,|\w+")]
-	private static partial Regex MathExpressionRegexPattern();
-
-	IEnumerable<string> GetReversePolishNotation(string expression)
+	bool ParseExpression()
 	{
-		var matches = MathExpressionRegexPattern().Matches(expression) ?? throw new ArgumentException("Invalid math expression.");
+		CurrentPosition = 0;
+		RPM.Clear();
+		return ParseExpr() && CurrentPosition == Expression.Length;
+	}
 
-		var output = new List<string>();
-		var stack = new Stack<(string Name, MathOperatorPrecedence Precedence)>();
+	bool ParseExpr()
+	{
+		return ParseConditional();
+	}
 
-		foreach (var match in matches.Cast<Match>())
+	[GeneratedRegex("""^(\?)""")]
+	private static partial Regex ConditionalStart();
+
+	[GeneratedRegex("""^(\:)""")]
+	private static partial Regex ConditionalElse();
+
+	bool ParseConditional()
+	{
+		if (!ParseEquality())
 		{
-			if (string.IsNullOrEmpty(match?.Value))
-			{
-				continue;
-			}
-
-			var value = match.Value;
-
-			if (double.TryParse(value, numberStyle, formatProvider, out var numeric))
-			{
-				if (numeric < 0)
-				{
-					var isNegative = output.Count == 0 || stack.Count != 0;
-
-					if (!isNegative)
-					{
-						stack.Push(("-", MathOperatorPrecedence.Low));
-						output.Add(Math.Abs(numeric).ToString());
-						continue;
-					}
-				}
-
-				output.Add(value);
-				continue;
-			}
-
-			var @operator = operators.FirstOrDefault(x => x.Name == value);
-			if (@operator != null)
-			{
-				if (@operator.Precedence is MathOperatorPrecedence.Constant)
-				{
-					output.Add(value);
-					continue;
-				}
-
-				while (stack.Count > 0)
-				{
-					var (name, precedence) = stack.Peek();
-					if (precedence >= @operator.Precedence)
-					{
-						output.Add(stack.Pop().Name);
-					}
-					else
-					{
-						break;
-					}
-				}
-
-				stack.Push((value, @operator.Precedence));
-			}
-			else if (value is "(")
-			{
-				stack.Push((value, MathOperatorPrecedence.Lowest));
-			}
-			else if (value is ")")
-			{
-				var isFound = false;
-				for (var i = stack.Count - 1; i >= 0; i--)
-				{
-					if (stack.Count == 0)
-					{
-						throw new ArgumentException("Invalid math expression.");
-					}
-
-					var stackValue = stack.Pop().Name;
-					if (stackValue is "(")
-					{
-						isFound = true;
-						break;
-					}
-
-					output.Add(stackValue);
-				}
-
-				if (!isFound)
-				{
-					throw new ArgumentException("Invalid math expression.");
-				}
-			}
-			else if (value is ",")
-			{
-				while (stack.Count > 0)
-				{
-					var (name, precedence) = stack.Peek();
-					if (precedence >= MathOperatorPrecedence.Low)
-					{
-						output.Add(stack.Pop().Name);
-					}
-					else
-					{
-						break;
-					}
-				}
-			}
+			return false;
 		}
 
-		for (var i = stack.Count - 1; i >= 0; i--)
+		if (!ParsePattern(ConditionalStart()))
 		{
-			var (name, precedence) = stack.Pop();
-			if (name is "(")
-			{
-				throw new ArgumentException("Invalid math expression.");
-			}
-
-			output.Add(name);
+			return true;
 		}
 
-		return output;
+		if (!ParseEquality())
+		{
+			return false;
+		}
+
+		if (!ParsePattern(ConditionalElse()))
+		{
+			return false;
+		}
+
+		if (!ParseEquality())
+		{
+			return false;
+		}
+
+		RPM.Add("?");
+		return true;
+	}
+
+	[GeneratedRegex("""^(==|!=)""")]
+	private static partial Regex EqualityOperators();
+
+	bool ParseEquality()
+	{
+		if (!ParseLogical())
+		{
+			return false;
+		}
+		int index = CurrentPosition;
+		while (ParsePattern(EqualityOperators()))
+		{
+			string Operator = new string(MatchedString);
+			if (!ParseLogical())
+			{
+				CurrentPosition = index;
+				return false;
+			}
+			RPM.Add(Operator);
+			index = CurrentPosition;
+		}
+		return true;
+	}
+
+	[GeneratedRegex("""^(\&\&|\|\|)""")]
+	private static partial Regex LogicalOperators();
+
+	bool ParseLogical()
+	{
+		if (!ParseCompare())
+		{
+			return false;
+		}
+		int index = CurrentPosition;
+		while (ParsePattern(LogicalOperators()))
+		{
+			string Operator = new string(MatchedString);
+			if (!ParseCompare())
+			{
+				CurrentPosition = index;
+				return false;
+			}
+			RPM.Add(Operator);
+			index = CurrentPosition;
+		}
+		return true;
+	}
+
+	[GeneratedRegex("""^(\>\=?|\<\=?)""")]
+	private static partial Regex CompareOperators();
+
+	bool ParseCompare()
+	{
+		if (!ParseSum())
+		{
+			return false;
+		}
+		int index = CurrentPosition;
+		while (ParsePattern(CompareOperators()))
+		{
+			string Operator = new string(MatchedString);
+			if (!ParseSum())
+			{
+				CurrentPosition = index;
+				return false;
+			}
+			RPM.Add(Operator);
+			index = CurrentPosition;
+		}
+		return true;
+	}
+
+	[GeneratedRegex("""^(\+|\-)""")]
+	private static partial Regex SumOperators();
+
+	bool ParseSum()
+	{
+		if (!ParseProduct())
+		{
+			return false;
+		}
+		int index = CurrentPosition;
+		while (ParsePattern(SumOperators()))
+		{
+			string Operator = new string(MatchedString);
+			if (!ParseProduct())
+			{
+				CurrentPosition = index;
+				return false;
+			}
+			RPM.Add(Operator);
+			index = CurrentPosition;
+		}
+		return true;
+	}
+
+	[GeneratedRegex("""^(\/|\*|\%)""")]
+	private static partial Regex ProductOperators();
+
+	bool ParseProduct()
+	{
+		if (!ParsePower())
+		{
+			return false;
+		}
+		int index = CurrentPosition;
+		while (ParsePattern(ProductOperators()))
+		{
+			string Operator = new string(MatchedString);
+			if (!ParsePower())
+			{
+				CurrentPosition = index;
+				return false;
+			}
+			RPM.Add(Operator);
+			index = CurrentPosition;
+		}
+		return true;
+	}
+
+	[GeneratedRegex("""^(\^)""")]
+	private static partial Regex PowerOperator();
+
+	bool ParsePower()
+	{
+		if (!ParsePrimary())
+		{
+			return false;
+		}
+		int index = CurrentPosition;
+		while (ParsePattern(PowerOperator()))
+		{
+			string Operator = new string(MatchedString);
+			if (!ParsePrimary())
+			{
+				CurrentPosition = index;
+				return false;
+			}
+			RPM.Add(Operator);
+			index = CurrentPosition;
+		}
+		return true;
+	}
+
+	[GeneratedRegex("""^(\-?\d+\.\d+|\-?\d+)""")]
+	private static partial Regex NumberPattern();
+
+	[GeneratedRegex("""^(\w+)""")]
+	private static partial Regex Ident();
+
+	[GeneratedRegex("""^(\()""")]
+	private static partial Regex ParenStart();
+
+	[GeneratedRegex("""^(\))""")]
+	private static partial Regex ParenEnd();
+
+	bool ParsePrimary()
+	{
+		if (ParsePattern(NumberPattern()))
+		{
+			RPM.Add(MatchedString);
+			return true;
+		}
+
+		if (ParseFunction())
+		{
+			return true;
+		}
+
+		if (ParsePattern(Ident()))
+		{
+			RPM.Add(MatchedString);
+			return true;
+		}
+
+		int index = CurrentPosition;
+		if (ParsePattern(ParenStart()))
+		{
+			if (!ParseExpr())
+			{
+				CurrentPosition = index;
+				return false;
+			}
+			if (!ParsePattern(ParenEnd()))
+			{
+				CurrentPosition = index;
+				return false;
+			}
+			return true;
+		}
+
+		return false;
+	}
+
+	[GeneratedRegex("""^(\w+)\(""")]
+	private static partial Regex FunctionStart();
+
+	[GeneratedRegex("""^(\,)""")]
+	private static partial Regex Comma();
+
+	[GeneratedRegex("""^(\))""")]
+	private static partial Regex FunctionEnd();
+
+	bool ParseFunction()
+	{
+		int index = CurrentPosition;
+		if (!ParsePattern(FunctionStart()))
+		{
+			return false;
+		}
+
+		string FunctionName = MatchedString;
+
+		if (!ParseExpr())
+		{
+			CurrentPosition = index;
+			return false;
+		}
+
+		while (ParsePattern(Comma()))
+		{
+			if (!ParseExpr())
+			{
+				CurrentPosition = index;
+				return false;
+			}
+			index = CurrentPosition;
+		}
+
+		if (!ParsePattern(FunctionEnd()))
+		{
+			CurrentPosition = index;
+			return false;
+		}
+
+		RPM.Add(FunctionName);
+
+		return true;
+	}
+
+	[GeneratedRegex("""^\s*""")]
+	private static partial Regex Whitespace();
+
+	public bool ParsePattern(Regex regex)
+	{
+		var match = Whitespace().Match(Expression.Substring(CurrentPosition));
+		if (match.Success)
+		{
+			CurrentPosition += match.Length;
+		}
+
+		match = regex.Match(Expression.Substring(CurrentPosition));
+		if (!match.Success)
+		{
+			return false;
+		}
+		CurrentPosition += match.Length;
+
+		MatchedString = match.Groups[1].Value;
+
+		match = Whitespace().Match(Expression.Substring(CurrentPosition));
+		if (match.Success)
+		{
+			CurrentPosition += match.Length;
+		}
+
+		return true;
 	}
 }
