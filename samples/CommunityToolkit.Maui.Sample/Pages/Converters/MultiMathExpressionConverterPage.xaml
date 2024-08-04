@@ -78,24 +78,17 @@
             Grid.Row="1"
             Grid.Column="7"
             Text="&gt;= 60"
-            TextColor="Green"
             VerticalOptions="Center"
             VerticalTextAlignment="Center">
-            <Label.Triggers>
-                <DataTrigger TargetType="Label">
-                    <DataTrigger.Binding>
-                        <MultiBinding Converter="{StaticResource MultiMathExpressionConverter}" ConverterParameter="x0 + x1 + x2 &gt;= 60">
-                            <Binding Mode="OneWay" Path="X0" />
-                            <Binding Mode="OneWay" Path="X1" />
-                            <Binding Mode="OneWay" Path="X2" />
-                        </MultiBinding>
-                    </DataTrigger.Binding>
-                    <DataTrigger.Value>
-                        <x:Boolean>False</x:Boolean>
-                    </DataTrigger.Value>
-                    <Setter Property="Label.TextColor" Value="Red" />
-                </DataTrigger>
-            </Label.Triggers>
+            <Label.TextColor>
+                <MultiBinding Converter="{StaticResource MultiMathExpressionConverter}" ConverterParameter="x0 + x1 + x2 &gt;= 60 ? x3 : x4">
+                    <Binding Mode="OneWay" Path="X0" />
+                    <Binding Mode="OneWay" Path="X1" />
+                    <Binding Mode="OneWay" Path="X2" />
+                    <Binding Source="{x:Static Colors.Green}" />
+                    <Binding Source="{x:Static Colors.Red}" />
+                </MultiBinding>
+            </Label.TextColor>
         </Label>
     </Grid>
 </pages:BasePage>
