@@ -195,137 +195,44 @@ sealed partial class MathExpression
 	[GeneratedRegex("""^(==|!=)""")]
 	private static partial Regex EqualityOperators();
 
-	bool ParseEquality()
-	{
-		if (!ParseLogical())
-		{
-			return false;
-		}
-		int index = CurrentPosition;
-		while (ParsePattern(EqualityOperators()))
-		{
-			string Operator = new string(MatchedString);
-			if (!ParseLogical())
-			{
-				CurrentPosition = index;
-				return false;
-			}
-			RPM.Add(Operator);
-			index = CurrentPosition;
-		}
-		return true;
-	}
+	bool ParseEquality() => ParseBinaryOperators(EqualityOperators(), ParseLogical);
 
 	[GeneratedRegex("""^(\&\&|\|\|)""")]
 	private static partial Regex LogicalOperators();
 
-	bool ParseLogical()
-	{
-		if (!ParseCompare())
-		{
-			return false;
-		}
-		int index = CurrentPosition;
-		while (ParsePattern(LogicalOperators()))
-		{
-			string Operator = new string(MatchedString);
-			if (!ParseCompare())
-			{
-				CurrentPosition = index;
-				return false;
-			}
-			RPM.Add(Operator);
-			index = CurrentPosition;
-		}
-		return true;
-	}
+	bool ParseLogical() => ParseBinaryOperators(LogicalOperators(), ParseCompare);
 
 	[GeneratedRegex("""^(\>\=?|\<\=?)""")]
 	private static partial Regex CompareOperators();
 
-	bool ParseCompare()
-	{
-		if (!ParseSum())
-		{
-			return false;
-		}
-		int index = CurrentPosition;
-		while (ParsePattern(CompareOperators()))
-		{
-			string Operator = new string(MatchedString);
-			if (!ParseSum())
-			{
-				CurrentPosition = index;
-				return false;
-			}
-			RPM.Add(Operator);
-			index = CurrentPosition;
-		}
-		return true;
-	}
+	bool ParseCompare() => ParseBinaryOperators(CompareOperators(), ParseSum);
 
 	[GeneratedRegex("""^(\+|\-)""")]
 	private static partial Regex SumOperators();
 
-	bool ParseSum()
-	{
-		if (!ParseProduct())
-		{
-			return false;
-		}
-		int index = CurrentPosition;
-		while (ParsePattern(SumOperators()))
-		{
-			string Operator = new string(MatchedString);
-			if (!ParseProduct())
-			{
-				CurrentPosition = index;
-				return false;
-			}
-			RPM.Add(Operator);
-			index = CurrentPosition;
-		}
-		return true;
-	}
+	bool ParseSum() => ParseBinaryOperators(SumOperators(), ParseProduct);
 
-	[GeneratedRegex("""^(\/|\*|\%)""")]
+	[GeneratedRegex("""^(\*|\/|\%)""")]
 	private static partial Regex ProductOperators();
 
-	bool ParseProduct()
-	{
-		if (!ParsePower())
-		{
-			return false;
-		}
-		int index = CurrentPosition;
-		while (ParsePattern(ProductOperators()))
-		{
-			string Operator = new string(MatchedString);
-			if (!ParsePower())
-			{
-				CurrentPosition = index;
-				return false;
-			}
-			RPM.Add(Operator);
-			index = CurrentPosition;
-		}
-		return true;
-	}
+	bool ParseProduct() => ParseBinaryOperators(ProductOperators(), ParsePower);
 
 	[GeneratedRegex("""^(\^)""")]
 	private static partial Regex PowerOperator();
 
-	bool ParsePower()
+	bool ParsePower() => ParseBinaryOperators(PowerOperator(), ParsePrimary);
+
+	bool ParseBinaryOperators(Regex BinaryOperators, Func<bool> ParseNext)
 	{
-		if (!ParsePrimary())
+		if (!ParseNext())
 		{
 			return false;
 		}
 		int index = CurrentPosition;
-		while (ParsePattern(PowerOperator()))
+		while (ParsePattern(BinaryOperators))
 		{
 			string Operator = new string(MatchedString);
-			if (!ParsePrimary())
+			if (!ParseNext())
 			{
 				CurrentPosition = index;
 				return false;
