@@ -247,7 +247,7 @@ sealed partial class MathExpression
 	private static partial Regex NumberPattern();
 
 	[GeneratedRegex("""^(\w+)""")]
-	private static partial Regex Ident();
+	private static partial Regex Constants();
 
 	[GeneratedRegex("""^(\()""")]
 	private static partial Regex ParenStart();
@@ -268,7 +268,7 @@ sealed partial class MathExpression
 			return true;
 		}
 
-		if (ParsePattern(Ident()))
+		if (ParsePattern(Constants()))
 		{
 			RPM.Add(MatchedString);
 			return true;
