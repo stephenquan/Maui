@@ -33,7 +33,7 @@ public sealed class MathOperator
 		string name,
 		int numericCount,
 		MathOperatorPrecedence precedence,
-		Func<object[], object> calculateFunc)
+		Func<object?[], object?> calculateFunc)
 	{
 		Name = name;
 		CalculateFunc = calculateFunc;
@@ -59,5 +59,5 @@ public sealed class MathOperator
 	/// <summary>
 	/// Calculation Function
 	/// </summary>
-	public Func<object[], object> CalculateFunc { get; }
+	public Func<object?[], object?> CalculateFunc { get; }
 }
