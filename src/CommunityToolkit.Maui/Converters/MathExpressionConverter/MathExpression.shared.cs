@@ -163,7 +163,7 @@ sealed partial class MathExpression
 
 	bool ParseConditional()
 	{
-		if (!ParseEquality())
+		if (!ParseLogicalOR())
 		{
 			return false;
 		}
@@ -173,7 +173,7 @@ sealed partial class MathExpression
 			return true;
 		}
 
-		if (!ParseEquality())
+		if (!ParseLogicalOR())
 		{
 			return false;
 		}
@@ -183,7 +183,7 @@ sealed partial class MathExpression
 			return false;
 		}
 
-		if (!ParseEquality())
+		if (!ParseLogicalOR())
 		{
 			return false;
 		}
@@ -192,15 +192,20 @@ sealed partial class MathExpression
 		return true;
 	}
 
+	[GeneratedRegex("""^(\|\|)""")]
+	private static partial Regex LogicalOROperator();
+
+	bool ParseLogicalOR() => ParseBinaryOperators(LogicalOROperator(), ParseLogicalAnd);
+
+	[GeneratedRegex("""^(\&\&)""")]
+	private static partial Regex LogicalAndOperator();
+
+	bool ParseLogicalAnd() => ParseBinaryOperators(LogicalAndOperator(), ParseEquality);
+
 	[GeneratedRegex("""^(==|!=)""")]
 	private static partial Regex EqualityOperators();
 
-	bool ParseEquality() => ParseBinaryOperators(EqualityOperators(), ParseLogical);
-
-	[GeneratedRegex("""^(\&\&|\|\|)""")]
-	private static partial Regex LogicalOperators();
-
-	bool ParseLogical() => ParseBinaryOperators(LogicalOperators(), ParseCompare);
+	bool ParseEquality() => ParseBinaryOperators(EqualityOperators(), ParseCompare);
 
 	[GeneratedRegex("""^(\>\=?|\<\=?)""")]
 	private static partial Regex CompareOperators();
