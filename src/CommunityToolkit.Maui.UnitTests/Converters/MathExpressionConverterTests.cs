@@ -43,6 +43,8 @@ public class MathExpressionConverterTests : BaseOneWayConverterTest<MathExpressi
 	[InlineData("x >= 1 && (x <= 3 || x >= 0)", 2d, true)]
 	[InlineData("true", 2d, true)]
 	[InlineData("false", 2d, false)]
+	[InlineData("-x > 2", 3d, false)]
+	[InlineData("!!! (---x > 2)", 3d, true)]
 	public void MathExpressionConverter_ReturnsCorrectBooleanResult(string expression, double x, bool expectedResult)
 	{
 		var mathExpressionConverter = new MathExpressionConverter();

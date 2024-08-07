@@ -37,6 +37,8 @@ sealed partial class MathExpression
 			new ("*", 2, MathOperatorPrecedence.Medium, x => Convert.ToDouble(x[0]) * Convert.ToDouble(x[1])),
 			new ("/", 2, MathOperatorPrecedence.Medium, x => Convert.ToDouble(x[0]) / Convert.ToDouble(x[1])),
 			new ("%", 2, MathOperatorPrecedence.Medium, x => Convert.ToDouble(x[0]) % Convert.ToDouble(x[1])),
+			new ("neg", 1, MathOperatorPrecedence.Medium, x => -Convert.ToDouble(x[0])),
+			new ("not", 1, MathOperatorPrecedence.Medium, x => !Convert.ToBoolean(x[0])),
 			new ("abs", 1, MathOperatorPrecedence.Medium, x => Math.Abs(Convert.ToDouble(x[0]))),
 			new ("acos", 1, MathOperatorPrecedence.Medium, x => Math.Acos(Convert.ToDouble(x[0]))),
 			new ("asin", 1, MathOperatorPrecedence.Medium, x => Math.Asin(Convert.ToDouble(x[0]))),
@@ -227,6 +229,42 @@ sealed partial class MathExpression
 
 	bool ParsePower() => ParseBinaryOperators(PowerOperator(), ParsePrimary);
 
+	[GeneratedRegex("""^(\-|\!)""")]
+	private static partial Regex UnaryOperators();
+
+	static Dictionary<string, string> UnaryMapping { get; } = new Dictionary<string, string>()
+	{
+		{ "-", "neg" },
+		{ "!", "not" }
+	};
+
+	bool ParseUnary()
+	{
+		int index = CurrentPosition;
+
+		if (!ParsePattern(UnaryOperators()))
+		{
+			return ParsePrimary();
+		}
+
+		string Operator = new string(MatchedString);
+
+		if (UnaryMapping.ContainsKey(Operator))
+		{
+			Operator = UnaryMapping[Operator];
+		}
+
+		if (!ParsePrimary())
+		{
+			CurrentPosition = index;
+			return false;
+		}
+
+		RPM.Add(Operator);
+
+		return true;
+	}
+
 	bool ParseBinaryOperators(Regex BinaryOperators, Func<bool> ParseNext)
 	{
 		if (!ParseNext())
@@ -262,6 +300,23 @@ sealed partial class MathExpression
 
 	bool ParsePrimary()
 	{
+		int index = CurrentPosition;
+		if (ParsePattern(UnaryOperators()))
+		{
+			string Operator = new string(MatchedString);
+			if (UnaryMapping.ContainsKey(Operator))
+			{
+				Operator = UnaryMapping[Operator];
+			}
+			if (!ParsePrimary())
+			{
+				CurrentPosition = index;
+				return false;
+			}
+			RPM.Add(Operator);
+			return true;
+		}
+
 		if (ParsePattern(NumberPattern()))
 		{
 			RPM.Add(MatchedString);
@@ -279,7 +334,7 @@ sealed partial class MathExpression
 			return true;
 		}
 
-		int index = CurrentPosition;
+		index = CurrentPosition;
 		if (ParsePattern(ParenStart()))
 		{
 			if (!ParseExpr())
