@@ -238,33 +238,6 @@ sealed partial class MathExpression
 		{ "!", "not" }
 	};
 
-	bool ParseUnary()
-	{
-		int index = CurrentPosition;
-
-		if (!ParsePattern(UnaryOperators()))
-		{
-			return ParsePrimary();
-		}
-
-		string Operator = new string(MatchedString);
-
-		if (UnaryMapping.ContainsKey(Operator))
-		{
-			Operator = UnaryMapping[Operator];
-		}
-
-		if (!ParsePrimary())
-		{
-			CurrentPosition = index;
-			return false;
-		}
-
-		RPM.Add(Operator);
-
-		return true;
-	}
-
 	bool ParseBinaryOperators(Regex BinaryOperators, Func<bool> ParseNext)
 	{
 		if (!ParseNext())
@@ -300,23 +273,6 @@ sealed partial class MathExpression
 
 	bool ParsePrimary()
 	{
-		int index = CurrentPosition;
-		if (ParsePattern(UnaryOperators()))
-		{
-			string Operator = new string(MatchedString);
-			if (UnaryMapping.ContainsKey(Operator))
-			{
-				Operator = UnaryMapping[Operator];
-			}
-			if (!ParsePrimary())
-			{
-				CurrentPosition = index;
-				return false;
-			}
-			RPM.Add(Operator);
-			return true;
-		}
-
 		if (ParsePattern(NumberPattern()))
 		{
 			RPM.Add(MatchedString);
@@ -334,7 +290,7 @@ sealed partial class MathExpression
 			return true;
 		}
 
-		index = CurrentPosition;
+		int index = CurrentPosition;
 		if (ParsePattern(ParenStart()))
 		{
 			if (!ParseExpr())
@@ -347,6 +303,23 @@ sealed partial class MathExpression
 				CurrentPosition = index;
 				return false;
 			}
+			return true;
+		}
+
+		index = CurrentPosition;
+		if (ParsePattern(UnaryOperators()))
+		{
+			string Operator = new string(MatchedString);
+			if (UnaryMapping.ContainsKey(Operator))
+			{
+				Operator = UnaryMapping[Operator];
+			}
+			if (!ParsePrimary())
+			{
+				CurrentPosition = index;
+				return false;
+			}
+			RPM.Add(Operator);
 			return true;
 		}
 
