@@ -96,7 +96,7 @@ sealed partial class MathExpression
 
 	internal string MatchedString { get; set; } = string.Empty;
 
-	internal List<string> RPM { get; } = new();
+	internal List<string> RPN { get; } = new();
 
 	public object Calculate()
 	{
@@ -107,7 +107,7 @@ sealed partial class MathExpression
 
 		var stack = new Stack<object>();
 
-		foreach (var value in RPM)
+		foreach (var value in RPN)
 		{
 			if (double.TryParse(value, numberStyle, formatProvider, out var numeric))
 			{
@@ -153,7 +153,7 @@ sealed partial class MathExpression
 	bool ParseExpression()
 	{
 		CurrentPosition = 0;
-		RPM.Clear();
+		RPN.Clear();
 		return ParseExpr() && CurrentPosition == Expression.Length;
 	}
 
@@ -195,7 +195,7 @@ sealed partial class MathExpression
 			return false;
 		}
 
-		RPM.Add("?");
+		RPN.Add("?");
 		return true;
 	}
 
@@ -258,7 +258,7 @@ sealed partial class MathExpression
 				CurrentPosition = index;
 				return false;
 			}
-			RPM.Add(Operator);
+			RPN.Add(Operator);
 			index = CurrentPosition;
 		}
 		return true;
@@ -280,7 +280,7 @@ sealed partial class MathExpression
 	{
 		if (ParsePattern(NumberPattern()))
 		{
-			RPM.Add(MatchedString);
+			RPN.Add(MatchedString);
 			return true;
 		}
 
@@ -291,7 +291,7 @@ sealed partial class MathExpression
 
 		if (ParsePattern(Constants()))
 		{
-			RPM.Add(MatchedString);
+			RPN.Add(MatchedString);
 			return true;
 		}
 
@@ -324,7 +324,7 @@ sealed partial class MathExpression
 				CurrentPosition = index;
 				return false;
 			}
-			RPM.Add(Operator);
+			RPN.Add(Operator);
 			return true;
 		}
 
@@ -372,7 +372,7 @@ sealed partial class MathExpression
 			return false;
 		}
 
-		RPM.Add(FunctionName);
+		RPN.Add(FunctionName);
 
 		return true;
 	}
