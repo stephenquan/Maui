@@ -71,6 +71,22 @@ public class MathExpressionConverterTests : BaseOneWayConverterTest<MathExpressi
 	}
 
 	[Theory]
+	[InlineData("x == x1", new object?[] { 2d, 2d }, true)]
+	[InlineData("x == x1", new object?[] { 2d, null }, false)]
+	[InlineData("x == x1", new object?[] { null, 2d}, false)]
+	[InlineData("x == x1", new object?[] { null, null }, true)]
+	[InlineData("(x ? x1 : x2) == null", new object?[] { true, null, 2d }, true)]
+	public void MathExpressionConverter_WithMultiplyVariable_ReturnsCorrectBooleanResult(string expression, object[] variables, bool expectedResult)
+	{
+		var mathExpressionConverter = new MultiMathExpressionConverter();
+
+		object? result = mathExpressionConverter.Convert(variables, mathExpressionTargetType, expression);
+
+		Assert.True(result is not null);
+		Assert.Equal(expectedResult, result);
+	}
+
+	[Theory]
 	[InlineData("1 + 3 + 5 + (3 - 2))")]
 	[InlineData("1 + 2) + (9")]
 	[InlineData("100 + pow(2)")]
@@ -97,7 +113,7 @@ public class MathExpressionConverterTests : BaseOneWayConverterTest<MathExpressi
 	public void MultiMathExpressionConverterInvalidValuesReturnsNull()
 	{
 		var mathExpressionConverter = new MultiMathExpressionConverter();
-		var result = mathExpressionConverter.Convert([0d, null], mathExpressionTargetType, "x", cultureInfo);
+		var result = mathExpressionConverter.Convert([0d, null], mathExpressionTargetType, "x1", cultureInfo);
 		result.Should().BeNull();
 	}
 

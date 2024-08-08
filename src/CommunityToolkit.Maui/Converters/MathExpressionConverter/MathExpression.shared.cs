@@ -73,6 +73,7 @@ sealed partial class MathExpression
 			new ("e", 0, MathOperatorPrecedence.Constant, _ => Math.E),
 			new ("true", 0, MathOperatorPrecedence.Constant, _ => true),
 			new ("false", 0, MathOperatorPrecedence.Constant, _ => false),
+			new ("null", 0, MathOperatorPrecedence.Constant, _ => null),
 		};
 
 		if (argumentList.Count > 0)
@@ -131,16 +132,13 @@ sealed partial class MathExpression
 				throw new ArgumentException("Invalid math expression.");
 			}
 
-			bool ResultIsNull = false;
+			bool null_guard = false;
 			var args = new List<object?>();
 			for (var j = 0; j < operatorNumericCount; j++)
 			{
 				object? val = stack.Pop();
 				args.Add(val);
-				if (val is null)
-				{
-					ResultIsNull = true;
-				}
+				null_guard = null_guard || (val is null);
 			}
 
 			args.Reverse();
@@ -148,22 +146,15 @@ sealed partial class MathExpression
 			switch (mathOperator.Name)
 			{
 				case "?":
-					ResultIsNull = args[0] is null;
+					null_guard = args[0] is null;
 					break;
 				case "==":
 				case "!=":
-					ResultIsNull = false;
+					null_guard = false;
 					break;
 			}
 
-			if (ResultIsNull)
-			{
-				stack.Push(null);
-			}
-			else
-			{
-				stack.Push(mathOperator.CalculateFunc([.. args]));
-			}
+			stack.Push(null_guard ? null : mathOperator.CalculateFunc([.. args]));
 		}
 
 		if (stack.Count != 1)
