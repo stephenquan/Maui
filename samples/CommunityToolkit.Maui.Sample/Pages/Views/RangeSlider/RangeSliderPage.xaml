@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<pages:BasePage
+    x:Class="CommunityToolkit.Maui.Sample.Pages.Views.RangeSliderPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:mct="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:pages="clr-namespace:CommunityToolkit.Maui.Sample.Pages"
+    xmlns:sample="clr-namespace:CommunityToolkit.Maui.Sample"
+    xmlns:viewModels="clr-namespace:CommunityToolkit.Maui.Sample.ViewModels.Views"
+    Title="RangeSlider"
+    Padding="12,12,12,0"
+    x:DataType="viewModels:RangeSliderViewModel"
+    x:TypeArguments="viewModels:RangeSliderViewModel">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="10">
+            <VerticalStackLayout.Resources>
+                <ResourceDictionary>
+                    <Style x:Key="Heading" TargetType="Label">
+                        <Setter Property="VerticalTextAlignment" Value="Center" />
+                        <Setter Property="HorizontalTextAlignment" Value="Center" />
+                        <Setter Property="FontSize" Value="12" />
+                        <Setter Property="HorizontalOptions" Value="Center" />
+                        <Setter Property="LineBreakMode" Value="WordWrap" />
+                        <Setter Property="Margin" Value="10" />
+                    </Style>
+                    <Style x:Key="HR" TargetType="Line">
+                        <Setter Property="Stroke" Value="{AppThemeBinding Light=Black, Dark=White}" />
+                        <Setter Property="X2" Value="300" />
+                        <Setter Property="HorizontalOptions" Value="Center" />
+                    </Style>
+                </ResourceDictionary>
+            </VerticalStackLayout.Resources>
+
+            <Label Style="{StaticResource Heading}" Text="Simple RangeSlider" />
+
+            <Grid ColumnDefinitions="50,*,50" ColumnSpacing="10">
+                <Label Text="{Binding SimpleLowerValue, StringFormat='{}{0:F1}'}" VerticalOptions="Center" />
+                <mct:RangeSlider
+                    Grid.Column="1"
+                    HorizontalOptions="Fill"
+                    LowerValue="{Binding SimpleLowerValue, Mode=TwoWay}"
+                    MaximumValue="100"
+                    MinimumValue="0"
+                    UpperValue="{Binding SimpleUpperValue, Mode=TwoWay}"
+                    WidthRequest="-1" />
+                <Label
+                    Grid.Column="2"
+                    Text="{Binding SimpleUpperValue, StringFormat='{}{0:F1}'}"
+                    VerticalOptions="Center" />
+            </Grid>
+
+            <Line Style="{StaticResource HR}" />
+
+            <Label Style="{StaticResource Heading}" Text="RangeSlider with custom thumb and track colors" />
+
+            <Grid ColumnDefinitions="50,*,50" ColumnSpacing="10">
+                <Label Text="{Binding LowerValue2, StringFormat='{}{0:F1}'}" VerticalOptions="Center" />
+                <Border Grid.Column="1" HorizontalOptions="Fill">
+                    <mct:RangeSlider
+                        HorizontalOptions="Fill"
+                        InnerTrackColor="Orange"
+                        InnerTrackCornerRadius="5"
+                        InnerTrackSize="10"
+                        LowerThumbColor="Red"
+                        LowerValue="{Binding LowerValue2, Mode=TwoWay}"
+                        MaximumValue="100"
+                        MinimumValue="0"
+                        OuterTrackColor="DarkGray"
+                        OuterTrackCornerRadius="7"
+                        OuterTrackSize="14"
+                        UpperThumbColor="Green"
+                        UpperValue="{Binding UpperValue2, Mode=TwoWay}"
+                        WidthRequest="-1" />
+                </Border>
+                <Label
+                    Grid.Column="2"
+                    Text="{Binding UpperValue2, StringFormat='{}{0:F1}'}"
+                    VerticalOptions="Center" />
+            </Grid>
+
+            <Line Style="{StaticResource HR}" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</pages:BasePage>
