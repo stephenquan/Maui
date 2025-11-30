@@ -40,8 +40,8 @@
                     Grid.Column="1"
                     HorizontalOptions="Fill"
                     LowerValue="{Binding SimpleLowerValue, Mode=TwoWay}"
-                    MaximumValue="100"
-                    MinimumValue="0"
+                    MaximumValue="200"
+                    MinimumValue="100"
                     UpperValue="{Binding SimpleUpperValue, Mode=TwoWay}"
                     WidthRequest="-1" />
                 <Label
@@ -64,8 +64,8 @@
                         InnerTrackSize="10"
                         LowerThumbColor="Red"
                         LowerValue="{Binding LowerValue2, Mode=TwoWay}"
-                        MaximumValue="100"
-                        MinimumValue="0"
+                        MaximumValue="200"
+                        MinimumValue="100"
                         OuterTrackColor="DarkGray"
                         OuterTrackCornerRadius="7"
                         OuterTrackSize="14"
@@ -80,6 +80,26 @@
             </Grid>
 
             <Line Style="{StaticResource HR}" />
+
+            <Label Style="{StaticResource Heading}" Text="RangeSlider wtih StepSize" />
+
+            <Grid ColumnDefinitions="50,*,50" ColumnSpacing="10">
+                <Label Text="{Binding LowerValue3, StringFormat='{}{0:F1}'}" VerticalOptions="Center" />
+                <Border Grid.Column="1" HorizontalOptions="Fill">
+                    <mct:RangeSlider
+                        HorizontalOptions="Fill"
+                        LowerValue="{Binding LowerValue3, Mode=TwoWay}"
+                        MaximumValue="200"
+                        MinimumValue="100"
+                        StepSize="5"
+                        UpperValue="{Binding UpperValue3, Mode=TwoWay}"
+                        WidthRequest="-1" />
+                </Border>
+                <Label
+                    Grid.Column="2"
+                    Text="{Binding UpperValue3, StringFormat='{}{0:F1}'}"
+                    VerticalOptions="Center" />
+            </Grid>
 
         </VerticalStackLayout>
     </ScrollView>

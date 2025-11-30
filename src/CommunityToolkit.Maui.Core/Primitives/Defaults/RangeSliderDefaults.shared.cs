@@ -20,6 +20,9 @@ public static class RangeSliderDefaults
 	/// <summary>Default for Upper Value</summary>
 	public const double UpperValue = 1;
 
+	/// <summary>Default for Step Size</summary>
+	public const double StepSize = 0;
+
 	/// <summary>Default value for Lower Thumb Color</summary>
 	public static Color LowerThumbColor { get; } = Colors.Gray;
 

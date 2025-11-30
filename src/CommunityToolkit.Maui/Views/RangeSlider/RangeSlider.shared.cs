@@ -14,10 +14,13 @@ public partial class RangeSlider : ContentView
 	public static readonly BindableProperty MaximumValueProperty = BindableProperty.Create(nameof(MaximumValue), typeof(double), typeof(IAvatarView), defaultValue: RangeSliderDefaults.MaximumValue);
 
 	/// <summary>The backing store for the <see cref="LowerValue" /> bindable property.</summary>
-	public static readonly BindableProperty LowerValueProperty = BindableProperty.Create(nameof(LowerValue), typeof(double), typeof(RangeSlider), defaultValue: RangeSliderDefaults.LowerValue);
+	public static readonly BindableProperty LowerValueProperty = BindableProperty.Create(nameof(LowerValue), typeof(double), typeof(RangeSlider), defaultValue: RangeSliderDefaults.LowerValue, coerceValue: CoerceLowerValue);
 
 	/// <summary>The backing store for the <see cref="UpperValue" /> bindable property.</summary>
-	public static readonly BindableProperty UpperValueProperty = BindableProperty.Create(nameof(UpperValue), typeof(double), typeof(RangeSlider), defaultValue: RangeSliderDefaults.UpperValue);
+	public static readonly BindableProperty UpperValueProperty = BindableProperty.Create(nameof(UpperValue), typeof(double), typeof(RangeSlider), defaultValue: RangeSliderDefaults.UpperValue, coerceValue: CoerceUpperValue);
+
+	/// <summary>The backing store for the <see cref="StepSize"/> bindable property.</summary>
+	public static readonly BindableProperty StepSizeProperty = BindableProperty.Create(nameof(StepSize), typeof(double), typeof(RangeSlider), defaultValue: RangeSliderDefaults.StepSize);
 
 	/// <summary>The backing store for the <see cref="LowerThumbColor"/> bindable property.</summary>
 	public static readonly BindableProperty LowerThumbColorProperty = BindableProperty.Create(nameof(LowerThumbColor), typeof(Color), typeof(RangeSlider), defaultValue: RangeSliderDefaults.LowerThumbColor);
@@ -76,7 +79,7 @@ public partial class RangeSlider : ContentView
 		MaximumTrackColor = Colors.Transparent,
 	};
 
-	bool initializing = true;
+	bool clampValues = false;
 
 	/// <summary>Initializes a new instance of the <see cref="RangeSlider"/> class.</summary>
 	public RangeSlider()
@@ -90,9 +93,7 @@ public partial class RangeSlider : ContentView
 		innerTrack.SetBinding(RoundRectangle.HeightRequestProperty, BindingBase.Create<RangeSlider, double>(static p => p.InnerTrackSize, BindingMode.OneWay, source: this));
 		innerTrack.SetBinding(RoundRectangle.BackgroundColorProperty, BindingBase.Create<RangeSlider, Color>(static p => p.InnerTrackColor, BindingMode.OneWay, source: this));
 		innerTrack.SetBinding(RoundRectangle.CornerRadiusProperty, BindingBase.Create<RangeSlider, CornerRadius>(static p => p.InnerTrackCornerRadius, BindingMode.OneWay, source: this));
-		//lowerSlider.SetBinding(Slider.ValueProperty, BindingBase.Create<RangeSlider, double>(static p => p.LowerValue, BindingMode.TwoWay, source: this));
 		lowerSlider.SetBinding(Slider.ThumbColorProperty, BindingBase.Create<RangeSlider, Color>(static p => p.LowerThumbColor, BindingMode.OneWay, source: this));
-		//upperSlider.SetBinding(Slider.ValueProperty, BindingBase.Create<RangeSlider, double>(static p => p.UpperValue, BindingMode.TwoWay, source: this));
 		upperSlider.SetBinding(Slider.ThumbColorProperty, BindingBase.Create<RangeSlider, Color>(static p => p.UpperThumbColor, BindingMode.OneWay, source: this));
 
 		Content = new Grid
@@ -108,61 +109,83 @@ public partial class RangeSlider : ContentView
 
 		Dispatcher.Dispatch(() =>
 		{
-			lowerSlider.SetBinding(Slider.MinimumProperty, BindingBase.Create<RangeSlider, double>(static p => p.MinimumValue, BindingMode.OneWay, source: this));
-			lowerSlider.SetBinding(Slider.MaximumProperty, BindingBase.Create<RangeSlider, double>(static p => p.MaximumValue, BindingMode.OneWay, source: this));
+			clampValues = true;
+			CoerceValue(LowerValueProperty);
+			CoerceValue(UpperValueProperty);
 			lowerSlider.DragStarted += HandleLowerSliderDragStarted;
 			lowerSlider.DragCompleted += HandleLowerSliderDragCompleted;
 			lowerSlider.PropertyChanged += HandleLowerSliderPropertyChanged;
 			lowerSlider.Focused += HandlerLowerSliderFocused;
-			upperSlider.SetBinding(Slider.MinimumProperty, BindingBase.Create<RangeSlider, double>(static p => p.MinimumValue, BindingMode.OneWay, source: this));
-			upperSlider.SetBinding(Slider.MaximumProperty, BindingBase.Create<RangeSlider, double>(static p => p.MaximumValue, BindingMode.OneWay, source: this));
 			upperSlider.DragStarted += HandleUpperSliderDragStarted;
 			upperSlider.DragCompleted += HandleUpperSliderDragCompleted;
 			upperSlider.PropertyChanged += HandleUpperSliderPropertyChanged;
 			upperSlider.Focused += HandlerUpperSliderFocused;
-			initializing = false;
-			UpdateInternalSliders();
+			UpdateSliderRanges();
+			UpdateLowerSliderValue();
+			UpdateUpperSliderValue();
+			UpdateFocusedSliderLayout();
 			UpdateOuterTrackLayout();
 			UpdateInnerTrackLayout();
 		});
 	}
 
-	void HandlePropertyChanged(object? sender, PropertyChangedEventArgs e)
+	static object CoerceLowerValue(BindableObject bindable, object value)
 	{
-		if (initializing)
+		var rangeSlider = (RangeSlider)bindable;
+		var input = (double)value;
+
+		if (rangeSlider.clampValues)
 		{
-			if (e.PropertyName == LowerValueProperty.PropertyName)
+			if (rangeSlider.MinimumValue <= rangeSlider.MaximumValue)
 			{
-				if (LowerValue < lowerSlider.Minimum)
-				{
-					lowerSlider.Minimum = LowerValue;
-				}
-				if (LowerValue > lowerSlider.Maximum)
-				{
-					lowerSlider.Maximum = LowerValue;
-				}
-				lowerSlider.Value = LowerValue;
+				input = Math.Clamp(input, rangeSlider.MinimumValue, rangeSlider.MaximumValue);
 			}
-			if (e.PropertyName == UpperValueProperty.PropertyName)
+			else
 			{
-				if (UpperValue < upperSlider.Minimum)
-				{
-					upperSlider.Minimum = UpperValue;
-				}
-				if (UpperValue > upperSlider.Maximum)
-				{
-					upperSlider.Maximum = UpperValue;
-				}
-				upperSlider.Value = UpperValue;
+				input = Math.Clamp(input, rangeSlider.MaximumValue, rangeSlider.MinimumValue);
 			}
-			return;
 		}
 
+		return input;
+	}
+
+	static object CoerceUpperValue(BindableObject bindable, object value)
+	{
+		var rangeSlider = (RangeSlider)bindable;
+		var input = (double)value;
+
+		if (rangeSlider.clampValues)
+		{
+			if (rangeSlider.MinimumValue <= rangeSlider.MaximumValue)
+			{
+				input = Math.Clamp(input, rangeSlider.MinimumValue, rangeSlider.MaximumValue);
+			}
+			else
+			{
+				input = Math.Clamp(input, rangeSlider.MaximumValue, rangeSlider.MinimumValue);
+			}
+		}
+
+		return input;
+	}
+
+	void HandlePropertyChanged(object? sender, PropertyChangedEventArgs e)
+	{
 		if (e.PropertyName == WidthProperty.PropertyName
 			|| e.PropertyName == MinimumValueProperty.PropertyName
 			|| e.PropertyName == MaximumValueProperty.PropertyName)
 		{
-			UpdateInternalSliders();
+			UpdateFocusedSliderLayout();
+		}
+
+		if (e.PropertyName == LowerValueProperty.PropertyName)
+		{
+			UpdateLowerSliderValue();
+		}
+
+		if (e.PropertyName == UpperValueProperty.PropertyName)
+		{
+			UpdateUpperSliderValue();
 		}
 
 		if (e.PropertyName == WidthProperty.PropertyName
@@ -171,18 +194,6 @@ public partial class RangeSlider : ContentView
 			|| e.PropertyName == OuterTrackSizeProperty.PropertyName)
 		{
 			UpdateOuterTrackLayout();
-		}
-
-		if (e.PropertyName == LowerValueProperty.PropertyName)
-		{
-			lowerSlider.Value = LowerValue;
-			UpdateInternalSliders();
-		}
-
-		if (e.PropertyName == UpperValueProperty.PropertyName)
-		{
-			upperSlider.Value = UpperValue;
-			UpdateInternalSliders();
 		}
 
 		if (e.PropertyName == WidthProperty.PropertyName
@@ -199,22 +210,21 @@ public partial class RangeSlider : ContentView
 	void HandleLowerSliderDragStarted(object? sender, EventArgs e)
 	{
 		FocusMode = RangeSliderFocusMode.Lower;
-		UpdateInternalSliders();
+		UpdateFocusedSliderLayout();
 	}
 
 	void HandleLowerSliderDragCompleted(object? sender, EventArgs e)
 	{
 		FocusMode = RangeSliderFocusMode.Default;
-		UpdateInternalSliders();
+		UpdateFocusedSliderLayout();
 	}
 
 	void HandleLowerSliderPropertyChanged(object? sender, PropertyChangedEventArgs e)
 	{
 		if (e.PropertyName == Slider.ValueProperty.PropertyName)
 		{
-			LowerValue = lowerSlider.Value;
+			LowerValue = (StepSize == 0.0 ? lowerSlider.Value : Math.Round(lowerSlider.Value)) * GetUnit() + MinimumValue;
 			FocusMode = RangeSliderFocusMode.Lower;
-			UpdateInternalSliders();
 			UpdateInnerTrackLayout();
 		}
 	}
@@ -222,28 +232,27 @@ public partial class RangeSlider : ContentView
 	void HandlerLowerSliderFocused(object? sender, FocusEventArgs e)
 	{
 		FocusMode = RangeSliderFocusMode.Lower;
-		UpdateInternalSliders();
+		UpdateFocusedSliderLayout();
 	}
 
 	void HandleUpperSliderDragStarted(object? sender, EventArgs e)
 	{
 		FocusMode = RangeSliderFocusMode.Upper;
-		UpdateInternalSliders();
+		UpdateFocusedSliderLayout();
 	}
 
 	void HandleUpperSliderDragCompleted(object? sender, EventArgs e)
 	{
 		FocusMode = RangeSliderFocusMode.Default;
-		UpdateInternalSliders();
+		UpdateFocusedSliderLayout();
 	}
 
 	void HandleUpperSliderPropertyChanged(object? sender, PropertyChangedEventArgs e)
 	{
 		if (e.PropertyName == Slider.ValueProperty.PropertyName)
 		{
-			UpperValue = upperSlider.Value;
+			UpperValue = (StepSize == 0.0 ? upperSlider.Value : Math.Round(upperSlider.Value)) * GetUnit() + MinimumValue;
 			FocusMode = RangeSliderFocusMode.Upper;
-			UpdateInternalSliders();
 			UpdateInnerTrackLayout();
 		}
 	}
@@ -251,24 +260,50 @@ public partial class RangeSlider : ContentView
 	void HandlerUpperSliderFocused(object? sender, FocusEventArgs e)
 	{
 		FocusMode = RangeSliderFocusMode.Upper;
-		UpdateInternalSliders();
+		UpdateFocusedSliderLayout();
 	}
 
-	void UpdateInternalSliders()
+	void UpdateFocusedSliderLayout()
 	{
-		//lowerSlider.Value = LowerValue;
-		//upperSlider.Value = UpperValue;
+		double unit = GetUnit();
+		lowerSlider.Minimum = upperSlider.Minimum = 0;
+		lowerSlider.Maximum = upperSlider.Maximum = (MaximumValue - MinimumValue) / unit;
 		lowerSlider.Maximum = upperSlider.Minimum = FocusMode switch
 		{
 			RangeSliderFocusMode.Lower => upperSlider.Value,
 			RangeSliderFocusMode.Upper => lowerSlider.Value,
 			_ => (lowerSlider.Value + upperSlider.Value) / 2,
 		};
-		if (MaximumValue > MinimumValue)
+
+		if (upperSlider.Maximum - lowerSlider.Minimum != 0)
 		{
-			lowerSlider.WidthRequest = (Width - PlatformThumbSize) * (lowerSlider.Maximum - lowerSlider.Minimum) / (MaximumValue - MinimumValue) + PlatformThumbSize;
-			upperSlider.WidthRequest = (Width - PlatformThumbSize) * (upperSlider.Maximum - upperSlider.Minimum) / (MaximumValue - MinimumValue) + PlatformThumbSize;
+			lowerSlider.WidthRequest = (Width - PlatformThumbSize) * (lowerSlider.Maximum - lowerSlider.Minimum) / (upperSlider.Maximum - lowerSlider.Minimum) + PlatformThumbSize;
+			upperSlider.WidthRequest = (Width - PlatformThumbSize) * (upperSlider.Maximum - upperSlider.Minimum) / (upperSlider.Maximum - lowerSlider.Minimum) + PlatformThumbSize;
 		}
+	}
+
+	double GetUnit()
+	{
+		return StepSize <= 0 ? 1 : StepSize;
+	}
+
+	void UpdateSliderRanges()
+	{
+		double unit = GetUnit();
+		lowerSlider.Minimum = 0;
+		lowerSlider.Maximum = (MaximumValue - MinimumValue) / unit;
+		upperSlider.Minimum = 0;
+		upperSlider.Maximum = (MaximumValue - MinimumValue) / unit;
+	}
+
+	void UpdateLowerSliderValue()
+	{
+		lowerSlider.Value = (LowerValue - MinimumValue) / GetUnit();
+	}
+
+	void UpdateUpperSliderValue()
+	{
+		upperSlider.Value = (UpperValue - MinimumValue) / GetUnit();
 	}
 
 	void UpdateOuterTrackLayout()
@@ -279,11 +314,8 @@ public partial class RangeSlider : ContentView
 
 	void UpdateInnerTrackLayout()
 	{
-		if (MaximumValue - MinimumValue > 0)
-		{
-			innerTrack.TranslationX = (Width - PlatformThumbSize) * (lowerSlider.Value - lowerSlider.Minimum) / (MaximumValue - MinimumValue) + PlatformThumbSize / 2 - InnerTrackSize / 2;
-			innerTrack.WidthRequest = (Width - PlatformThumbSize) * (upperSlider.Value - lowerSlider.Value) / (MaximumValue - MinimumValue) + InnerTrackSize;
-		}
+		innerTrack.TranslationX = (Width - PlatformThumbSize) * (lowerSlider.Value - lowerSlider.Minimum) / (upperSlider.Maximum - lowerSlider.Minimum) + PlatformThumbSize / 2 - InnerTrackSize / 2;
+		innerTrack.WidthRequest = (Width - PlatformThumbSize) * (upperSlider.Value - lowerSlider.Value) / (upperSlider.Maximum - lowerSlider.Minimum) + InnerTrackSize;
 	}
 
 	/// <summary>Gets or sets the minimum value</summary>
@@ -312,6 +344,13 @@ public partial class RangeSlider : ContentView
 	{
 		get => (double)GetValue(UpperValueProperty);
 		set => SetValue(UpperValueProperty, value);
+	}
+
+	/// <summary>Gets or sets the step size</summary>
+	public double StepSize
+	{
+		get => (double)GetValue(StepSizeProperty);
+		set => SetValue(StepSizeProperty, value);
 	}
 
 	/// <summary>Gets or sets the lower thumb color</summary>
